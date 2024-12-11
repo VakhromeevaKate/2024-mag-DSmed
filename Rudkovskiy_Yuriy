@@ -1,0 +1,54 @@
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import StandardScaler
+
+# Генерация искусственных данных ЭЭГ для примера
+# В реальных задачах используйте ваши данные ЭЭГ
+def generate_eeg_data(num_samples, num_features, num_classes):
+    X = np.random.rand(num_samples, num_features)  # Случайные временные ряды
+    y = np.random.randint(0, num_classes, num_samples)  # Случайные метки классов
+    return X, y
+
+# Генерация данных
+num_samples = 1000  # Количество образцов
+num_features = 128  # Количество временных точек (например, 128 точек ЭЭГ)
+num_classes = 3     # Количество классов (например, 3 состояния)
+
+X, y = generate_eeg_data(num_samples, num_features, num_classes)
+
+# Преобразование меток в формат one-hot encoding
+encoder = OneHotEncoder(sparse=False)
+y_onehot = encoder.fit_transform(y.reshape(-1, 1))
+
+# Разделение данных на обучающую и тестовую выборки
+X_train, X_test, y_train, y_test = train_test_split(X, y_onehot, test_size=0.2, random_state=42)
+
+# Стандартизация данных
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Создание модели MLP
+model = keras.Sequential([
+    layers.Input(shape=(X_train.shape[1],)),  # Входной слой
+    layers.Dense(64, activation='relu'),        # Скрытый слой с 64 нейронами и ReLU активацией
+    layers.Dense(32, activation='relu'),        # Второй скрытый слой с 32 нейронами
+    layers.Dense(y_train.shape[1], activation='softmax')  # Выходной слой с softmax активацией
+])
+
+# Компиляция модели
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+# Обучение модели
+model.fit(X_train, y_train, epochs=50, batch_size=32, verbose=1)
+
+# Оценка модели на тестовых данных
+test_loss, test_accuracy = model.evaluate(X_test, y_test, verbose=0)
+print(f'Тестовая точность: {test_accuracy:.4f}')
